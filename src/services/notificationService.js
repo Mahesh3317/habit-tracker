@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import * as TaskManager from 'expo-task-manager';
+// import * as TaskManager from 'expo-task-manager';
 import { MOTIVATIONAL_QUOTES, URGE_ALTERNATIVES } from '../constants';
 import { getRandomMotivation } from '../utils/helpers';
 
