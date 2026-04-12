@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import 'react-native-reanimated';
 import { HabitProvider } from '../src/context/HabitContext';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 
