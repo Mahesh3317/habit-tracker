@@ -5,19 +5,15 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { useHabit } from '../context/HabitContext';
 import { COLORS } from '../constants';
 import {
-  getToday,
   calculateStreak,
   getWeekProgress,
   getAchievementBadge,
 } from '../utils/helpers';
 import { getDailyTaskProgress } from '../utils/taskHelpers';
-
-const { width } = Dimensions.get('window');
 
 export default function DashboardScreen() {
   const { state } = useHabit();
@@ -61,7 +57,7 @@ export default function DashboardScreen() {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>Let's Build Better Habits</Text>
+        <Text style={styles.greeting}>Let&apos;s Build Better Habits</Text>
         <View style={styles.pointsContainer}>
           <Text style={styles.pointsLabel}>Total Points</Text>
           <Text style={styles.points}>{state.totalPoints}</Text>
@@ -87,7 +83,7 @@ export default function DashboardScreen() {
       {/* Today's Task Progress */}
       {state.customTasks.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Today's Routine</Text>
+          <Text style={styles.sectionTitle}>Today&apos;s Routine</Text>
           <View 
             style={[
               styles.progressCard,

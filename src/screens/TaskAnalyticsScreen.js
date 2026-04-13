@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import { useHabit } from '../context/HabitContext';
 import {
@@ -16,8 +15,6 @@ import {
   shouldTaskAppearToday,
 } from '../utils/taskHelpers';
 import { Ionicons } from '@expo/vector-icons';
-
-const { width } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#667EEA',

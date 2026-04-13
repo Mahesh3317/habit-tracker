@@ -9,14 +9,10 @@ import {
   Switch,
   Modal,
   Alert,
-  FlatList,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useHabit } from '../context/HabitContext';
 import { createCustomTask, validateCustomTask, shouldTaskAppearToday } from '../utils/taskHelpers';
-
-const { width } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#667EEA',

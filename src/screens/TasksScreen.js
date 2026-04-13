@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
 } from 'react-native';
 import { useHabit } from '../context/HabitContext';
 import { COLORS } from '../constants';
 
 export default function TasksScreen() {
   const { state, completeTask } = useHabit();
-  const [expandedTask, setExpandedTask] = useState(null);
 
   const handleCompleteTask = (taskId, points) => {
     completeTask(taskId, points);
@@ -79,7 +77,7 @@ export default function TasksScreen() {
 
         {/* Tasks List */}
         <View style={styles.tasksSection}>
-          <Text style={styles.sectionTitle}>Today's Tasks</Text>
+          <Text style={styles.sectionTitle}>Today&apos;s Tasks</Text>
           {state.tasks.map((task) => (
             <TaskCard
               key={task.id}
@@ -130,7 +128,7 @@ export default function TasksScreen() {
         <View style={styles.motivationCard}>
           <Text style={styles.motivationEmoji}>✨</Text>
           <Text style={styles.motivationText}>
-            Every small task completed today builds the discipline muscle. You're creating a better future version of yourself!
+            Every small task completed today builds the discipline muscle. You&apos;re creating a better future version of yourself!
           </Text>
         </View>
       </View>

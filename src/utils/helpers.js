@@ -1,4 +1,4 @@
-import { format, differenceInDays, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 export const getToday = () => {
   return new Date().toISOString().split('T')[0];
@@ -37,7 +37,7 @@ export const calculateStreak = (dailyData, habit, targetValue) => {
 export const formatDate = (dateString) => {
   try {
     return format(parseISO(dateString), 'MMM d, yyyy');
-  } catch (error) {
+  } catch (_error) {
     return dateString;
   }
 };
@@ -45,7 +45,7 @@ export const formatDate = (dateString) => {
 export const formatDateShort = (dateString) => {
   try {
     return format(parseISO(dateString), 'MMM d');
-  } catch (error) {
+  } catch (_error) {
     return dateString;
   }
 };
@@ -137,7 +137,7 @@ export const formatTime = (seconds) => {
 export const getDayName = (dateString) => {
   try {
     return format(parseISO(dateString), 'EEEE');
-  } catch (error) {
+  } catch (_error) {
     return dateString;
   }
 };

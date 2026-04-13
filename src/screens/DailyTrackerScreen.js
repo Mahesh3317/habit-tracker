@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import { useHabit } from '../context/HabitContext';
 import { COLORS, HABIT_TARGETS } from '../constants';
-import { getToday, isDayCompleted } from '../utils/helpers';
-import { isTaskCompletedToday, completeTaskToday, shouldTaskAppearToday } from '../utils/taskHelpers';
+import { getToday } from '../utils/helpers';
+import { isTaskCompletedToday, shouldTaskAppearToday } from '../utils/taskHelpers';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function DailyTrackerScreen() {
@@ -120,7 +120,7 @@ export default function DailyTrackerScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Today's Habits</Text>
+        <Text style={styles.title}>Today&apos;s Habits</Text>
         <Text style={styles.date}>{new Date().toLocaleDateString('en-US', {
           weekday: 'long',
           month: 'short',

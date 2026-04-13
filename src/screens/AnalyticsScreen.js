@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { useHabit } from '../context/HabitContext';
 import { COLORS } from '../constants';
@@ -17,8 +16,6 @@ import {
   getAchievementBadge,
   calculateStreak,
 } from '../utils/helpers';
-
-const { width } = Dimensions.get('window');
 
 export default function AnalyticsScreen() {
   const { state } = useHabit();
@@ -120,7 +117,7 @@ export default function AnalyticsScreen() {
           <Text style={styles.insightTitle}>💡 Insight</Text>
           {reduction > 0 ? (
             <Text style={styles.insightText}>
-              Great progress! You've improved by {reduction}% compared to last week.
+              Great progress! You&apos;ve improved by {reduction}% compared to last week.
             </Text>
           ) : (
             <Text style={styles.insightText}>

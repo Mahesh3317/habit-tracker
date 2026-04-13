@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import { getRandomMotivation, formatTime } from '../utils/helpers';
 import { sendUrgeNotification } from '../services/notificationService';
 
 export default function UrgeControlScreen() {
-  const { state, setUrgeTimer } = useHabit();
+  const { setUrgeTimer } = useHabit();
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [motivation, setMotivation] = useState('');
@@ -22,6 +22,12 @@ export default function UrgeControlScreen() {
   useEffect(() => {
     setMotivation(getRandomMotivation(MOTIVATIONAL_QUOTES.selfControl));
   }, []);
+
+  const handleTimerComplete = useCallback(() => {
+    setMotivation('✨ You did it! You resisted the urge!');
+    setTimeLeft(0);
+    setUrgeTimer(null);
+  }, [setUrgeTimer]);
 
   useEffect(() => {
     let interval;
@@ -34,8 +40,10 @@ export default function UrgeControlScreen() {
       handleTimerComplete();
     }
 
-    return () => clearInterval(interval);
-  }, [isTimerActive, timeLeft]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTimerActive, timeLeft, handleTimerComplete]);
 
   const startUrgeControl = async () => {
     setIsTimerActive(true);
@@ -48,12 +56,6 @@ export default function UrgeControlScreen() {
       duration: 300,
       useNativeDriver: false,
     }).start();
-  };
-
-  const handleTimerComplete = () => {
-    setMotivation('✨ You did it! You resisted the urge!');
-    setTimeLeft(0);
-    setUrgeTimer(null);
   };
 
   const stopTimer = () => {
@@ -120,7 +122,7 @@ export default function UrgeControlScreen() {
               style={[styles.controlButton, styles.skipButton]}
               onPress={skipUrge}
             >
-              <Text style={styles.controlButtonText}>I'm Fine Now</Text>
+              <Text style={styles.controlButtonText}>I&apos;m Fine Now</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -177,7 +179,7 @@ export default function UrgeControlScreen() {
           </View>
         </View>
         <Text style={styles.motivationalText}>
-          Don't break your streak! You've got this! 💪
+          Don&apos;t break your streak! You&apos;ve got this! 💪
         </Text>
       </View>
     </ScrollView>
