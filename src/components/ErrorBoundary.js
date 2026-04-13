@@ -108,15 +108,3 @@ const styles = StyleSheet.create({
     borderTopColor: '#2D3748',
   },
 });
-    fontSize: 16,
-    color: '#FF6B6B',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  stack: {
-    fontSize: 12,
-    color: '#95A3AD',
-    marginTop: 10,
-    fontFamily: 'monospace',
-  },
-});
