@@ -4,9 +4,15 @@
     "appVersionSource": "local"
   },
   "build": {
-    "preview": {
+    "development": {
       "android": {
         "buildType": "apk"
+      }
+    },
+    "preview": {
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
       }
     },
     "preview2": {
