@@ -183,15 +183,29 @@ export function HabitProvider({ children }) {
   useEffect(() => {
     const loadState = async () => {
       try {
+        console.log('HabitContext: Starting state load from AsyncStorage');
         const savedState = await AsyncStorage.getItem('habitState');
+        console.log('HabitContext: Raw saved state:', savedState ? 'exists' : 'not found');
+        
         if (savedState) {
-          dispatch({
-            type: 'LOAD_STATE',
-            payload: JSON.parse(savedState),
-          });
+          try {
+            const parsedState = JSON.parse(savedState);
+            console.log('HabitContext: Successfully parsed state');
+            dispatch({
+              type: 'LOAD_STATE',
+              payload: parsedState,
+            });
+          } catch (parseError) {
+            console.error('HabitContext: JSON parse error:', parseError);
+            console.error('HabitContext: Invalid data:', savedState.substring(0, 100));
+            // Don't dispatch, just use initial state
+          }
+        } else {
+          console.log('HabitContext: No saved state, using initial state');
         }
       } catch (error) {
-        console.error('Failed to load state:', error);
+        console.error('HabitContext: Failed to load state:', error);
+        console.error('HabitContext: Error details:', error.message);
       }
     };
 
