@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useHabit } from '../context/HabitContext';
-import { COLORS } from '../constants';
 import {
   getMonthData,
   getWeekData,
@@ -16,6 +15,12 @@ import {
   getAchievementBadge,
   calculateStreak,
 } from '../utils/helpers';
+
+// Color constants
+const COLORS = {
+  dark: '#1A202C',
+  primary: '#667EEA',
+};
 
 export default function AnalyticsScreen() {
   const { state } = useHabit();
