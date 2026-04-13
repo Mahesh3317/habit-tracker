@@ -32,6 +32,14 @@ const initialState = {
 
 function habitReducer(state, action) {
   switch (action.type) {
+    case 'LOAD_STATE':
+      try {
+        return { ...action.payload };
+      } catch (error) {
+        console.warn('Failed to load state, using initial state:', error);
+        return state;
+      }
+    
     case 'LOG_HABIT':
       const today = new Date().toISOString().split('T')[0];
       return {
