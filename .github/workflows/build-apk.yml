@@ -1,0 +1,97 @@
+name: Build APK — Gradle (No EAS, 100% Free)
+
+on:
+  # Manual trigger — run whenever you need a new APK
+  workflow_dispatch:
+    inputs:
+      release_note:
+        description: 'What changed in this build?'
+        required: false
+        default: 'New release'
+
+  # Also auto-build when main gets a merge (native changes only)
+  push:
+    branches:
+      - main
+    paths:
+      # Only trigger when native-related files change
+      - 'habit-tracker/android/**'
+      - 'habit-tracker/package.json'
+      - 'habit-tracker/app.json'
+
+jobs:
+  build-apk:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: habit-tracker/package-lock.json
+
+      - name: Install JS dependencies
+        working-directory: habit-tracker
+        run: npm install --legacy-peer-deps
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('habit-tracker/android/**/*.gradle*', 'habit-tracker/android/gradle.properties') }}
+          restore-keys: gradle-
+
+      - name: Make gradlew executable
+        working-directory: habit-tracker/android
+        run: chmod +x gradlew
+
+      - name: Build Release APK
+        working-directory: habit-tracker/android
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: habit-tracker-release-${{ github.run_number }}
+          path: habit-tracker/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+      - name: Create GitHub Release with APK download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Release v1.0.${{ github.run_number }}"
+          body: |
+            ## Habit Tracker APK
+
+            ${{ github.event.inputs.release_note || 'Automated build from main branch' }}
+
+            **Build:** #${{ github.run_number }}
+            **Commit:** ${{ github.sha }}
+
+            ### Install
+            1. Download `app-release.apk` below
+            2. Enable "Install from unknown sources" on your Android phone
+            3. Install the APK
+          files: habit-tracker/android/app/build/outputs/apk/release/app-release.apk
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
