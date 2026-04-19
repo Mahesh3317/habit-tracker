@@ -1,46 +1,77 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import AsyncStorage from '@react-native-community/async-storage';
+/**
+ * HabitContext — Global App State with Firebase Firestore Sync
+ *
+ * What changed from the original AsyncStorage version:
+ *   1. State is loaded from Firestore (not AsyncStorage) when the user logs in.
+ *   2. State is saved to Firestore on every change (debounced 1 s).
+ *   3. An onSnapshot listener keeps state in sync across multiple devices in real time.
+ *   4. The listener uses `hasPendingWrites` metadata to break the save→listen→save loop.
+ *   5. userId is received as a prop — HabitProvider only mounts when the user is logged in.
+ *
+ * Free-tier read/write cost:
+ *   • App start    : 1 read  (initial load via onSnapshot)
+ *   • Every save   : 1 write (debounced, typically 1–5 per session)
+ *   • Cross-device : 0 extra reads (Firestore pushes changes automatically)
+ */
+
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useRef,
+} from 'react';
+import { saveAppState, subscribeToAppState } from '../services/firestoreService';
+
+// ─── Context ─────────────────────────────────────────────────────────────────
 
 const HabitContext = createContext();
+
+// ─── Default state ───────────────────────────────────────────────────────────
 
 const initialState = {
   dailyData: {},
   habits: {
-    smoking: { name: 'Smoking', target: 0, color: '#FF6B6B', streak: 0 },
+    smoking:         { name: 'Smoking',          target: 0, color: '#FF6B6B', streak: 0 },
     privateActivity: { name: 'Private Activity', target: 1, color: '#4ECDC4', streak: 0 },
-    workout: { name: 'Workout', target: 1, color: '#45B7D1', streak: 0 },
-    sleep: { name: 'Sleep', target: 8, color: '#96CEB4', streak: 0 },
+    workout:         { name: 'Workout',           target: 1, color: '#45B7D1', streak: 0 },
+    sleep:           { name: 'Sleep',             target: 8, color: '#96CEB4', streak: 0 },
   },
   tasks: [
-    { id: '1', name: 'Walk 20 minutes', completed: false, points: 10 },
-    { id: '2', name: 'Avoid porn', completed: false, points: 15 },
+    { id: '1', name: 'Walk 20 minutes',   completed: false, points: 10 },
+    { id: '2', name: 'Avoid porn',        completed: false, points: 15 },
     { id: '3', name: 'Reduce 1 cigarette', completed: false, points: 20 },
-    { id: '4', name: 'Eat breakfast', completed: false, points: 5 },
+    { id: '4', name: 'Eat breakfast',     completed: false, points: 5  },
   ],
-  customTasks: [], // NEW: User-created custom tasks
-  taskCompletions: [], // NEW: Track custom task completions
+  customTasks: [],
+  taskCompletions: [],
   totalPoints: 0,
   badges: [],
   showMotivation: false,
   urgeTimer: null,
-  notifications: {
-    morning: true,
-    evening: true,
-    night: true,
-  },
+  notifications: { morning: true, evening: true, night: true },
 };
+
+// ─── Reducer ─────────────────────────────────────────────────────────────────
 
 function habitReducer(state, action) {
   switch (action.type) {
+
     case 'LOAD_STATE':
-      try {
-        return { ...action.payload };
-      } catch (error) {
-        console.warn('Failed to load state, using initial state:', error);
-        return state;
-      }
-    
-    case 'LOG_HABIT':
+      // Merge with initialState so any new fields added in future updates are present
+      return {
+        ...initialState,
+        ...action.payload,
+        // Always guarantee these arrays exist even if Firestore doc is partial
+        customTasks:     Array.isArray(action.payload?.customTasks)     ? action.payload.customTasks     : [],
+        taskCompletions: Array.isArray(action.payload?.taskCompletions) ? action.payload.taskCompletions : [],
+        tasks:           Array.isArray(action.payload?.tasks)           ? action.payload.tasks           : initialState.tasks,
+        // Runtime-only — never loaded from storage
+        urgeTimer:     null,
+        showMotivation: false,
+      };
+
+    case 'LOG_HABIT': {
       const today = new Date().toISOString().split('T')[0];
       return {
         ...state,
@@ -52,6 +83,7 @@ function habitReducer(state, action) {
           },
         },
       };
+    }
 
     case 'UPDATE_STREAK':
       return {
@@ -68,10 +100,8 @@ function habitReducer(state, action) {
     case 'COMPLETE_TASK':
       return {
         ...state,
-        tasks: state.tasks.map((task) =>
-          task.id === action.payload.taskId
-            ? { ...task, completed: true }
-            : task
+        tasks: state.tasks.map((t) =>
+          t.id === action.payload.taskId ? { ...t, completed: true } : t
         ),
         totalPoints: state.totalPoints + action.payload.points,
       };
@@ -79,20 +109,14 @@ function habitReducer(state, action) {
     case 'RESET_DAILY_TASKS':
       return {
         ...state,
-        tasks: state.tasks.map((task) => ({ ...task, completed: false })),
+        tasks: state.tasks.map((t) => ({ ...t, completed: false })),
       };
 
     case 'ADD_BADGE':
-      return {
-        ...state,
-        badges: [...state.badges, action.payload],
-      };
+      return { ...state, badges: [...state.badges, action.payload] };
 
     case 'SET_URGE_TIMER':
-      return {
-        ...state,
-        urgeTimer: action.payload,
-      };
+      return { ...state, urgeTimer: action.payload };
 
     case 'TOGGLE_NOTIFICATION':
       return {
@@ -104,32 +128,27 @@ function habitReducer(state, action) {
       };
 
     case 'ADD_CUSTOM_TASK':
-      return {
-        ...state,
-        customTasks: [...state.customTasks, action.payload],
-      };
+      return { ...state, customTasks: [...state.customTasks, action.payload] };
 
     case 'UPDATE_CUSTOM_TASK':
       return {
         ...state,
-        customTasks: state.customTasks.map((task) =>
-          task.id === action.payload.id ? { ...task, ...action.payload.updates } : task
+        customTasks: state.customTasks.map((t) =>
+          t.id === action.payload.id ? { ...t, ...action.payload.updates } : t
         ),
       };
 
     case 'DELETE_CUSTOM_TASK':
       return {
         ...state,
-        customTasks: state.customTasks.filter((task) => task.id !== action.payload),
+        customTasks: state.customTasks.filter((t) => t.id !== action.payload),
       };
 
     case 'TOGGLE_CUSTOM_TASK_ACTIVE':
       return {
         ...state,
-        customTasks: state.customTasks.map((task) =>
-          task.id === action.payload
-            ? { ...task, isActive: !task.isActive }
-            : task
+        customTasks: state.customTasks.map((t) =>
+          t.id === action.payload ? { ...t, isActive: !t.isActive } : t
         ),
       };
 
@@ -141,128 +160,129 @@ function habitReducer(state, action) {
       };
 
     case 'LOAD_TASK_COMPLETIONS':
-      return {
-        ...state,
-        taskCompletions: action.payload,
-      };
-
-    case 'LOAD_STATE':
-      // Merge loaded state with initialState to ensure all properties exist
-      return {
-        ...initialState,
-        ...action.payload,
-        customTasks: (action.payload && action.payload.customTasks) || [],
-        taskCompletions: (action.payload && action.payload.taskCompletions) || [],
-      };
+      return { ...state, taskCompletions: action.payload };
 
     default:
       return state;
   }
 }
 
-export function HabitProvider({ children }) {
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
+/**
+ * HabitProvider must receive `userId` (the Firebase uid) as a prop.
+ * It is only rendered when the user is authenticated (see app/_layout.tsx).
+ */
+export function HabitProvider({ children, userId }) {
   const [state, dispatch] = useReducer(habitReducer, initialState);
 
-  // Save state and custom data to AsyncStorage
+  /**
+   * isLoadingRef tracks whether the initial Firestore load has completed.
+   * While true we skip writes so we don't echo data straight back to Firestore.
+   */
+  const isLoadingRef = useRef(true);
+
+  /**
+   * saveTimerRef holds the debounce timeout handle.
+   * Cancelling on every state change means we only write once per "burst".
+   */
+  const saveTimerRef = useRef(null);
+
+  // ── Firestore real-time subscription ───────────────────────────────────────
+
   useEffect(() => {
-    const saveState = async () => {
-      try {
-        await AsyncStorage.setItem('habitState', JSON.stringify(state));
-        await AsyncStorage.setItem('@habittrackerapp/customTasks', JSON.stringify(state.customTasks));
-        await AsyncStorage.setItem('@habittrackerapp/taskCompletions', JSON.stringify(state.taskCompletions));
-      } catch (error) {
-        console.error('Failed to save state:', error);
+    if (!userId) return;
+
+    isLoadingRef.current = true;
+
+    const unsubscribe = subscribeToAppState(
+      userId,
+      // ── Existing user: load their saved state ──────────────────────────
+      (remoteState) => {
+        dispatch({ type: 'LOAD_STATE', payload: remoteState });
+        isLoadingRef.current = false; // allow saves from now on
+      },
+      // ── New user: no Firestore document yet ────────────────────────────
+      // Keep initialState, unlock saves so the first change writes the doc
+      () => {
+        isLoadingRef.current = false;
+      },
+      // ── Error (permission denied, network, etc.) ───────────────────────
+      (err) => {
+        console.error('[HabitContext] Firestore subscription error:', err);
+        isLoadingRef.current = false; // still allow saves to retry
       }
+    );
+
+    return () => {
+      unsubscribe();
+      isLoadingRef.current = true; // Reset for next mount
     };
+  }, [userId]);
 
-    const timer = setTimeout(saveState, 1000);
-    return () => clearTimeout(timer);
-  }, [state]);
+  // ── Debounced Firestore save ────────────────────────────────────────────────
 
-  // Load state from AsyncStorage on mount
   useEffect(() => {
-    const loadState = async () => {
+    // Don't write while loading the initial snapshot, or if there's no user
+    if (isLoadingRef.current || !userId) return;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    saveTimerRef.current = setTimeout(async () => {
       try {
-        console.log('HabitContext: Starting state load from AsyncStorage');
-        const savedState = await AsyncStorage.getItem('habitState');
-        console.log('HabitContext: Raw saved state:', savedState ? 'exists' : 'not found');
-        
-        if (savedState) {
-          try {
-            const parsedState = JSON.parse(savedState);
-            console.log('HabitContext: Successfully parsed state');
-            dispatch({
-              type: 'LOAD_STATE',
-              payload: parsedState,
-            });
-          } catch (parseError) {
-            console.error('HabitContext: JSON parse error:', parseError);
-            console.error('HabitContext: Invalid data:', savedState.substring(0, 100));
-            // Don't dispatch, just use initial state
-          }
-        } else {
-          console.log('HabitContext: No saved state, using initial state');
-        }
-      } catch (error) {
-        console.error('HabitContext: Failed to load state:', error);
-        console.error('HabitContext: Error details:', error.message);
+        await saveAppState(userId, state);
+      } catch (err) {
+        console.error('[HabitContext] Failed to save to Firestore:', err);
       }
+    }, 1000); // 1-second debounce — batches rapid consecutive changes
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
+  }, [state, userId]);
 
-    loadState();
-  }, []);
+  // ── Action creators ────────────────────────────────────────────────────────
 
-  const logHabit = (habit, value) => {
+  const logHabit = (habit, value) =>
     dispatch({ type: 'LOG_HABIT', payload: { habit, value } });
-  };
 
-  const updateStreak = (habit, streak) => {
+  const updateStreak = (habit, streak) =>
     dispatch({ type: 'UPDATE_STREAK', payload: { habit, streak } });
-  };
 
-  const completeTask = (taskId, points) => {
+  const completeTask = (taskId, points) =>
     dispatch({ type: 'COMPLETE_TASK', payload: { taskId, points } });
-  };
 
-  const resetDailyTasks = () => {
+  const resetDailyTasks = () =>
     dispatch({ type: 'RESET_DAILY_TASKS' });
-  };
 
-  const addBadge = (badge) => {
+  const addBadge = (badge) =>
     dispatch({ type: 'ADD_BADGE', payload: badge });
-  };
 
-  const setUrgeTimer = (timer) => {
+  const setUrgeTimer = (timer) =>
     dispatch({ type: 'SET_URGE_TIMER', payload: timer });
-  };
 
-  const toggleNotification = (type) => {
+  const toggleNotification = (type) =>
     dispatch({ type: 'TOGGLE_NOTIFICATION', payload: type });
-  };
 
-  const addCustomTask = (task) => {
+  const addCustomTask = (task) =>
     dispatch({ type: 'ADD_CUSTOM_TASK', payload: task });
-  };
 
-  const updateCustomTask = (taskId, updates) => {
+  const updateCustomTask = (taskId, updates) =>
     dispatch({ type: 'UPDATE_CUSTOM_TASK', payload: { id: taskId, updates } });
-  };
 
-  const deleteCustomTask = (taskId) => {
+  const deleteCustomTask = (taskId) =>
     dispatch({ type: 'DELETE_CUSTOM_TASK', payload: taskId });
-  };
 
-  const toggleCustomTaskActive = (taskId) => {
+  const toggleCustomTaskActive = (taskId) =>
     dispatch({ type: 'TOGGLE_CUSTOM_TASK_ACTIVE', payload: taskId });
-  };
 
-  const completeCustomTask = (completion) => {
+  const completeCustomTask = (completion) =>
     dispatch({ type: 'COMPLETE_CUSTOM_TASK', payload: completion });
-  };
 
-  const loadTaskCompletions = (completions) => {
+  const loadTaskCompletions = (completions) =>
     dispatch({ type: 'LOAD_TASK_COMPLETIONS', payload: completions });
-  };
+
+  // ── Context value ──────────────────────────────────────────────────────────
 
   return (
     <HabitContext.Provider
@@ -288,10 +308,10 @@ export function HabitProvider({ children }) {
   );
 }
 
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
 export function useHabit() {
-  const context = useContext(HabitContext);
-  if (!context) {
-    throw new Error('useHabit must be used within HabitProvider');
-  }
-  return context;
+  const ctx = useContext(HabitContext);
+  if (!ctx) throw new Error('useHabit must be used within HabitProvider');
+  return ctx;
 }

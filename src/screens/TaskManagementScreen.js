@@ -376,27 +376,27 @@ export default function TaskManagementScreen() {
       {/* Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{state.customTasks.length}</Text>
+          <Text style={styles.statNumber}>{state.customTasks ? state.customTasks.length : 0}</Text>
           <Text style={styles.statLabel}>Total Tasks</Text>
         </View>
 
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>
-            {state.customTasks.filter((t) => t.isActive).length}
+            {state.customTasks ? state.customTasks.filter((t) => t.isActive).length : 0}
           </Text>
           <Text style={styles.statLabel}>Active</Text>
         </View>
 
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>
-            {state.customTasks.filter((t) => shouldTaskAppearToday(t)).length}
+            {state.customTasks ? state.customTasks.filter((t) => shouldTaskAppearToday(t)).length : 0}
           </Text>
           <Text style={styles.statLabel}>Today</Text>
         </View>
       </View>
 
       {/* Task List */}
-      {state.customTasks.length > 0 ? (
+      {state.customTasks && state.customTasks.length > 0 ? (
         <View style={styles.taskListContainer}>
           <Text style={styles.sectionTitle}>Active Tasks</Text>
           {state.customTasks.map((task) => (

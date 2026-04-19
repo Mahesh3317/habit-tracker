@@ -25,7 +25,7 @@ export default function DailyTrackerScreen() {
   const [workout, setWorkout] = useState(todayData.workout || false);
 
   // Get custom tasks that should appear today
-  const customTasksToday = state.customTasks.filter((task) => shouldTaskAppearToday(task) && task.isActive);
+  const customTasksToday = state.customTasks ? state.customTasks.filter((task) => shouldTaskAppearToday(task) && task.isActive) : [];
 
   const handleSmokingChange = (value) => {
     const numValue = parseInt(value) || 0;
@@ -110,7 +110,7 @@ export default function DailyTrackerScreen() {
       )}
 
       <Text style={styles.trackerStatus}>
-        {type === 'number' && `${value} ${HABIT_TARGETS[habit].unit}`}
+        {type === 'number' && HABIT_TARGETS[habit] && `${value} ${HABIT_TARGETS[habit].unit}`}
         {type === 'boolean' && (value ? '✓ Done!' : '⏳ Pending')}
         {type === 'sleep' && (value ? `${value} hrs` : 'Not logged')}
       </Text>

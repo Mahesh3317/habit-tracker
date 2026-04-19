@@ -24,13 +24,15 @@ export default function DashboardScreen() {
   useEffect(() => {
     // Calculate streaks for all habits
     const newStreaks = {};
-    Object.keys(state.habits).forEach((habit) => {
-      newStreaks[habit] = calculateStreak(
-        state.dailyData,
-        habit,
-        state.habits[habit].target
-      );
-    });
+    if (state.habits) {
+      Object.keys(state.habits).forEach((habit) => {
+        newStreaks[habit] = calculateStreak(
+          state.dailyData,
+          habit,
+          state.habits[habit].target
+        );
+      });
+    }
     setStreaks(newStreaks);
 
     // Calculate weekly progress
@@ -81,7 +83,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* Today's Task Progress */}
-      {state.customTasks.length > 0 && (
+      {state.customTasks && state.customTasks.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Today&apos;s Routine</Text>
           <View 
@@ -121,7 +123,7 @@ export default function DashboardScreen() {
       {/* Streaks */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Current Streaks</Text>
-        {Object.keys(state.habits).map((habitKey) => (
+        {state.habits && Object.keys(state.habits).map((habitKey) => (
           <StreakCard
             key={habitKey}
             habit={habitKey}
@@ -147,7 +149,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* Badges */}
-      {state.badges.length > 0 && (
+      {state.badges && state.badges.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Badges Earned</Text>
           <View style={styles.badgesContainer}>

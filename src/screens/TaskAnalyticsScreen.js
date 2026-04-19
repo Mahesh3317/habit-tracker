@@ -59,7 +59,7 @@ export default function TaskAnalyticsScreen() {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      const hasCompletion = state.taskCompletions.some(
+      const hasCompletion = state.taskCompletions && state.taskCompletions.some(
         (log) => log.taskId === taskId && log.dateCompleted === dateStr
       );
       dates.push({ date: dateStr, completed: hasCompletion ? 1 : 0 });
@@ -220,7 +220,7 @@ export default function TaskAnalyticsScreen() {
       </View>
 
       {/* Overall Stats */}
-      {state.customTasks.length > 0 ? (
+      {state.customTasks && state.customTasks.length > 0 ? (
         <>
           <OverallStatsCard />
 

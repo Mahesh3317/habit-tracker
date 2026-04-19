@@ -29,13 +29,15 @@ export default function AnalyticsScreen() {
   // Calculate data for all habits
   const getChartData = () => {
     const data = {};
-    Object.keys(state.habits).forEach((habit) => {
-      if (timeRange === 'week') {
-        data[habit] = getWeekData(state.dailyData, habit);
-      } else {
-        data[habit] = getMonthData(state.dailyData, habit);
-      }
-    });
+    if (state.habits) {
+      Object.keys(state.habits).forEach((habit) => {
+        if (timeRange === 'week') {
+          data[habit] = getWeekData(state.dailyData, habit);
+        } else {
+          data[habit] = getMonthData(state.dailyData, habit);
+        }
+      });
+    }
     return data;
   };
 
@@ -173,14 +175,14 @@ export default function AnalyticsScreen() {
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Badges</Text>
-            <Text style={styles.summaryValue}>{state.badges.length}</Text>
+            <Text style={styles.summaryValue}>{state.badges ? state.badges.length : 0}</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Best Streak</Text>
             <Text style={styles.summaryValue}>
-              {Math.max(...Object.keys(state.habits).map((habit) =>
+              {state.habits ? Math.max(...Object.keys(state.habits).map((habit) =>
                 calculateStreak(state.dailyData, habit, state.habits[habit].target)
-              ), 0)}
+              ), 0) : 0}
             </Text>
           </View>
         </View>
@@ -188,7 +190,7 @@ export default function AnalyticsScreen() {
 
       {/* Individual Habit Analytics */}
       <View style={styles.analyticsSection}>
-        {Object.keys(state.habits).map((habit) => (
+        {state.habits && Object.keys(state.habits).map((habit) => (
           <HabitAnalytics
             key={habit}
             habit={habit}
