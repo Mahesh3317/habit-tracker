@@ -1,14 +1,13 @@
-name: PR Check — Lint
+name: Dev — OTA Preview Update
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
       - dev
 
 jobs:
-  lint:
-    name: Lint check
+  ota-update-preview:
+    name: Push OTA update to preview channel
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +25,15 @@ jobs:
         working-directory: habit-tracker
         run: npm install --legacy-peer-deps
 
-      - name: Run lint
+      - name: Setup EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Push OTA update → preview channel (FREE)
         working-directory: habit-tracker
-        run: npm run lint
+        run: |
+          eas update \
+            --channel preview \
+            --message "Dev push: ${{ github.sha }}" \
+            --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

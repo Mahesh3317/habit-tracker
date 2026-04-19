@@ -1,0 +1,43 @@
+name: Production — OTA Update on PR Merge
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed   # triggers when PR is merged OR closed
+
+jobs:
+  ota-update-production:
+    name: Push OTA update to production channel
+    # Only run if PR was actually merged (not just closed)
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: habit-tracker/package-lock.json
+
+      - name: Install dependencies
+        working-directory: habit-tracker
+        run: npm install --legacy-peer-deps
+
+      - name: Setup EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Push OTA update → production channel (FREE)
+        working-directory: habit-tracker
+        run: |
+          eas update \
+            --channel production \
+            --message "Release: PR #${{ github.event.pull_request.number }} — ${{ github.event.pull_request.title }}" \
+            --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
