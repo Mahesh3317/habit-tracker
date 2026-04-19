@@ -5,27 +5,22 @@
   },
   "build": {
     "development": {
+      "channel": "dev",
+      "developmentClient": true,
+      "distribution": "internal",
       "android": {
         "buildType": "apk"
       }
     },
     "preview": {
-      "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease"
-      }
-    },
-    "preview2": {
-      "android": {
-        "buildType": "apk"
-      }
-    },
-    "preview3": {
+      "channel": "preview",
+      "distribution": "internal",
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
+      "channel": "production",
       "android": {
         "buildType": "apk"
       }
