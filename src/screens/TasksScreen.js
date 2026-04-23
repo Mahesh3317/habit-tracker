@@ -45,7 +45,7 @@ export default function TasksScreen() {
   );
 
   const CompletedCount = () => {
-    const completed = state.tasks.filter((t) => t.completed).length;
+    const completed = state.tasks ? state.tasks.filter((t) => t.completed).length : 0;
     return (
       <View style={styles.completedStats}>
         <Text style={styles.statsLabel}>Tasks Completed Today</Text>
@@ -53,12 +53,12 @@ export default function TasksScreen() {
           <View
             style={[
               styles.progressFill,
-              { width: `${(completed / state.tasks.length) * 100}%` },
+              { width: `${state.tasks && state.tasks.length > 0 ? (completed / state.tasks.length) * 100 : 0}%` },
             ]}
           />
         </View>
         <Text style={styles.statsCount}>
-          {completed} of {state.tasks.length}
+          {completed} of {state.tasks ? state.tasks.length : 0}
         </Text>
       </View>
     );
@@ -78,7 +78,7 @@ export default function TasksScreen() {
         {/* Tasks List */}
         <View style={styles.tasksSection}>
           <Text style={styles.sectionTitle}>Today&apos;s Tasks</Text>
-          {state.tasks.map((task) => (
+          {state.tasks && state.tasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}

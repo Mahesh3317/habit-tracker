@@ -19,17 +19,14 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: habit-tracker/package-lock.json
 
       - name: Install dependencies
-        working-directory: habit-tracker
         run: npm install --legacy-peer-deps
 
       - name: Setup EAS CLI
         run: npm install -g eas-cli
 
       - name: Push OTA update → preview channel (FREE)
-        working-directory: habit-tracker
         run: |
           eas update \
             --channel preview \

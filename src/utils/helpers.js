@@ -97,17 +97,19 @@ export const calculateTotalReduction = (dailyData, habits) => {
   let totalReduction = 0;
   let count = 0;
 
-  Object.keys(habits).forEach((habit) => {
-    if (habit !== 'sleep') {
-      const reduction = calculateReduction(
-        dailyData,
-        habit,
-        habits[habit].target
-      );
-      totalReduction += reduction;
-      count++;
-    }
-  });
+  if (habits) {
+    Object.keys(habits).forEach((habit) => {
+      if (habit !== 'sleep') {
+        const reduction = calculateReduction(
+          dailyData,
+          habit,
+          habits[habit].target
+        );
+        totalReduction += reduction;
+        count++;
+      }
+    });
+  }
 
   return Math.round(totalReduction / count) || 0;
 };
@@ -146,18 +148,20 @@ export const getWeekProgress = (dailyData, habits) => {
   const dates = getDateRange(7);
   let completedDays = 0;
 
-  dates.forEach((date) => {
-    const dayData = dailyData[date];
-    if (dayData) {
-      let completed = true;
-      Object.keys(habits).forEach((habit) => {
-        if (dayData[habit] !== habits[habit].target) {
-          completed = false;
-        }
-      });
-      if (completed) completedDays++;
-    }
-  });
+  if (habits) {
+    dates.forEach((date) => {
+      const dayData = dailyData[date];
+      if (dayData) {
+        let completed = true;
+        Object.keys(habits).forEach((habit) => {
+          if (dayData[habit] !== habits[habit].target) {
+            completed = false;
+          }
+        });
+        if (completed) completedDays++;
+      }
+    });
+  }
 
   return {
     completed: completedDays,
